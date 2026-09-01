@@ -1,139 +1,78 @@
-# Azure RAG Engineering Portfolio Guide
+# AzureBot — AI Engineering Portfolio Guide
 
 ## Positioning
 
-`AzureBot` is based on Microsoft's `azure-search-openai-demo` and is being used as an AI Engineering portfolio workspace.
+AzureBot is an **Enterprise Knowledge Control Center**: a citation-first RAG platform for answering questions over authorized enterprise documents.
 
-The repository demonstrates an end-to-end Azure RAG architecture involving Azure OpenAI, Azure AI Search, document ingestion, cloud deployment, identity, and observability. The upstream sample is the foundation; original portfolio value must come from modifications, experiments, evaluation, testing, and hardening added in this repository.
+The repository started from Microsoft's `azure-search-openai-demo`. The upstream implementation is attributed rather than presented as original work. The original engineering layer in this repository focuses on enterprise retrieval policy, grounding, security, evaluation, and operational architecture.
 
-## Current repository assessment
+## Engineering story
 
-The initial repository commit is effectively an import of the upstream Azure sample. For that reason, it would be misleading to present the existing implementation as entirely original engineering work.
+### 1. Retrieval
 
-That is not a reason to discard the project. It is a reason to make the fork visibly and technically yours.
+The platform supports a full retrieval-to-generation path:
 
-## What makes this valuable for AI Engineering
+- document ingestion and processing,
+- chunking and enrichment,
+- embeddings,
+- Azure AI Search lexical/vector/semantic retrieval,
+- query rewriting,
+- source extraction and citations,
+- grounded Azure OpenAI generation.
 
-### 1. RAG systems
+### 2. Authorization
 
-Demonstrates the complete retrieval-to-generation path:
+Authenticated identity is carried into the RAG pipeline. User-uploaded content is associated with the authenticated principal, and the new policy layer provides a fail-closed Azure AI Search ACL filter contract.
 
-- document ingestion
-- indexing
-- vector/semantic retrieval
-- prompt construction
-- grounded generation
-- citations
+The design principle is simple: **authorization is a retrieval requirement, not a post-generation check.**
 
-### 2. Azure architecture
+### 3. Prompt-injection defense
 
-The stack provides practical exposure to:
+Retrieved documents are treated as untrusted data. The portfolio policy layer detects common indirect-instruction patterns and the generation prompt explicitly states that document instructions cannot override system/application policy.
 
-- Azure OpenAI
-- Azure AI Search
-- Azure Storage
-- Azure Container Apps / App Service
-- Azure Functions
-- Azure AI Document Intelligence
-- Microsoft Entra ID
-- Application Insights / Azure Monitor
-- Bicep
-- Azure Developer CLI
+This is important because RAG can turn a malicious document into an indirect attack surface.
 
-### 3. Production engineering
+### 4. Grounding and abstention
 
-A strong portfolio version should demonstrate more than a successful chat response. It should show:
+The generation contract requires:
 
-- authentication and authorization
-- secret management
-- prompt-injection defenses
-- evaluation and regression testing
-- observability
-- latency and cost measurement
-- CI/CD
-- infrastructure as code
-- operational documentation
+- source-backed claims,
+- explicit uncertainty when evidence is insufficient,
+- conflict reporting when sources disagree,
+- no fabricated citations,
+- no disclosure of hidden prompts or credentials.
 
-## Recommended transformation
+### 5. Evaluation
 
-### Phase 1 — Make the use case yours
+`evals/enterprise_regression.json` defines representative regression scenarios for grounded Q&A, abstention, indirect prompt injection, and authorization boundaries.
 
-Replace the generic fictional-company scenario with a domain that demonstrates useful enterprise AI engineering, such as:
+The target evaluation scorecard is:
 
-- government policy assistant
-- engineering-document assistant
-- enterprise knowledge assistant
-- procurement-document intelligence
-- environmental-document research assistant
+| Area | Metric |
+|---|---|
+| Retrieval | Recall@K, Precision@K, MRR |
+| Generation | Groundedness, citation correctness |
+| Safety | Injection-resistance rate |
+| Authorization | Unauthorized retrieval/leakage rate |
+| Reliability | Abstention accuracy |
+| Operations | latency, failures, token/cost signals |
 
-Use synthetic or public documents unless you have permission to use private data.
+### 6. Azure operations
 
-### Phase 2 — Build measurable RAG evaluation
+The project retains the Azure Developer CLI, Bicep, Container Apps/Functions, Azure Storage, Azure AI Search, Azure OpenAI, Entra ID, and Application Insights foundation from the original sample.
 
-Create a small evaluation set containing:
+The intended production pattern is Microsoft Entra/RBAC and managed identity rather than long-lived credentials wherever Azure supports it.
 
-- question
-- expected source document
-- expected evidence
-- acceptable answer characteristics
+## Interview-ready explanation
 
-Measure retrieval quality and grounded answer quality. Keep evaluation results in the repository.
+**How did you make a RAG demo enterprise-oriented?**
 
-### Phase 3 — Harden the agent
+> I treated retrieval as a security boundary. The authenticated principal is carried into the retrieval layer, the query is constrained by ACL metadata, retrieved documents are considered untrusted input, and the final model call receives a strict grounding contract. I then added a regression layer for retrieval quality, abstention, prompt injection, and authorization leakage so RAG quality can be measured instead of judged from a few demo questions.
 
-Add and test:
+**What was the main trade-off?**
 
-- prompt-injection defenses
-- source filtering
-- authorization-aware retrieval
-- input validation
-- safe error handling
-- sensitive-data-safe logging
-- rate limiting where appropriate
+> Application-controlled retrieval gives more control over authorization, evidence filtering, telemetry, and evaluation than delegating all retrieval behavior to a managed agent. The trade-off is more application code and more responsibility for maintaining the retrieval contract.
 
-### Phase 4 — Engineering quality
+## Honest scope
 
-Add:
-
-- typed Python interfaces
-- unit tests
-- integration tests
-- RAG regression tests
-- linting
-- formatting
-- type checking
-- dependency/security scanning
-- GitHub Actions
-
-### Phase 5 — Azure operations
-
-Document and, where practical, implement:
-
-- managed identity
-- Key Vault
-- Application Insights
-- Azure Monitor
-- Bicep deployment
-- `azd` deployment
-- cost controls
-- rollback/recovery procedures
-
-## Recruiter-facing project statement
-
-> Built and extended an Azure-based RAG platform using Python, Azure OpenAI and Azure AI Search, focusing on document ingestion, retrieval quality, grounded generation, enterprise identity, observability, evaluation, and cloud deployment.
-
-Use this wording only after the corresponding engineering work has actually been implemented and verified.
-
-## Important attribution rule
-
-This repository is based on Microsoft's Azure Samples `azure-search-openai-demo`. Do not claim Microsoft's upstream implementation as original work. Preserve the upstream license and attribution while clearly documenting your own changes.
-
-## Target outcome
-
-The finished portfolio version should answer five interview questions convincingly:
-
-1. **How did you build the RAG pipeline?**
-2. **How did you measure whether retrieval and answers were good?**
-3. **How did you secure enterprise data and model/tool access?**
-4. **How did you deploy and observe the system on Azure?**
-5. **What engineering trade-offs did you make around quality, latency and cost?**
+This is a strong AI-engineering portfolio implementation, but it is not a blanket claim of production readiness or compliance. A real enterprise deployment still requires organization-specific threat modeling, network controls, retention policies, data classification, SLOs, disaster recovery, and operational validation.
