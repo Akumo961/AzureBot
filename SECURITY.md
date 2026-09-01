@@ -1,40 +1,48 @@
-<!-- BEGIN MICROSOFT SECURITY.MD V0.0.5 BLOCK -->
 # Security
 
-Microsoft takes the security of our software products and services seriously, which includes all source code repositories managed through our GitHub organizations, which include [Microsoft](https://github.com/Microsoft), [Azure](https://github.com/Azure), [DotNet](https://github.com/dotnet), [AspNet](https://github.com/aspnet), [Xamarin](https://github.com/xamarin), and [our GitHub organizations](https://opensource.microsoft.com/).
+## Scope
 
-If you believe you have found a security vulnerability in any Microsoft-owned repository that meets [Microsoft's definition of a security vulnerability](<https://docs.microsoft.com/previous-versions/tn-archive/cc751383(v=technet.10)>), please report it to us as described below.
+AzureBot is an enterprise RAG portfolio project. It processes potentially sensitive enterprise documents, so security is treated as part of the retrieval and generation design rather than as a separate checklist.
 
-## Reporting Security Issues
+## Implemented controls
 
-**Please do not report security vulnerabilities through public GitHub issues.**
+- Microsoft Entra authentication foundation.
+- Authorization metadata propagated into retrieval.
+- User-uploaded documents are associated with the authenticated principal.
+- Fail-closed ACL filter helper in `app/backend/core/rag_policy.py`.
+- Retrieved content is treated as untrusted data.
+- Common indirect prompt-injection patterns are detected and neutralized by the policy helper.
+- Grounded generation explicitly forbids disclosure of prompts, credentials, tokens, and unauthorized data.
+- Citation-first response contract.
+- OpenTelemetry / Application Insights integration in the application foundation.
+- Dependency and CI workflows inherited from and extended around the Azure sample foundation.
 
-Instead, please report them to the Microsoft Security Response Center (MSRC) at [https://msrc.microsoft.com/create-report](https://msrc.microsoft.com/create-report).
+## Security properties to verify before production
 
-If you prefer to submit without logging in, send email to [secure@microsoft.com](mailto:secure@microsoft.com). If possible, encrypt your message with our PGP key; please download it from the [Microsoft Security Response Center PGP Key page](https://www.microsoft.com/msrc/pgp-key-msrc).
+The repository does not claim that these controls alone establish compliance or production readiness. A deployment should additionally verify:
 
-You should receive a response within 24 hours. If for some reason you do not, please follow up via email to ensure we received your original message. Additional information can be found at [microsoft.com/msrc](https://www.microsoft.com/msrc).
+- tenant isolation and document-level authorization with realistic identities,
+- network isolation/private endpoints where required,
+- managed identities and Microsoft Entra RBAC instead of long-lived API keys,
+- Key Vault and secret rotation,
+- data retention/deletion requirements,
+- audit logging without sensitive document content,
+- rate limits and abuse controls,
+- backup and disaster recovery,
+- vulnerability/dependency scanning,
+- adversarial RAG and authorization testing,
+- cost and quota protections.
 
-Please include the requested information listed below (as much as you can provide) to help us better understand the nature and scope of the possible issue:
+## Threat model
 
-- Type of issue (e.g. buffer overflow, SQL injection, cross-site scripting, etc.)
-- Full paths of source file(s) related to the manifestation of the issue
-- The location of the affected source code (tag/branch/commit or direct URL)
-- Any special configuration required to reproduce the issue
-- Step-by-step instructions to reproduce the issue
-- Proof-of-concept or exploit code (if possible)
-- Impact of the issue, including how an attacker might exploit the issue
+Primary threats include indirect prompt injection in documents, unauthorized retrieval, sensitive-data leakage, prompt disclosure, malicious uploads, denial of service, and configuration/credential compromise.
 
-This information will help us triage your report more quickly.
+The application should assume that any retrieved document may contain attacker-controlled text. Azure's current guidance explicitly recommends retrieval-time access control and treating retrieved content as untrusted input. It also recommends Microsoft Entra ID/RBAC and managed identities for production access patterns.
 
-If you are reporting for a bug bounty, more complete reports can contribute to a higher bounty award. Please visit our [Microsoft Bug Bounty Program](https://microsoft.com/msrc/bounty) page for more details about our active programs.
+## Reporting
 
-## Preferred Languages
+For vulnerabilities specific to this portfolio repository, open a private security report through GitHub rather than publishing exploit details in a public issue. Do not include real customer data, credentials, access tokens, or other secrets in a report.
 
-We prefer all communications to be in English.
+## Attribution
 
-## Policy
-
-Microsoft follows the principle of [Coordinated Vulnerability Disclosure](https://www.microsoft.com/msrc/cvd).
-
-<!-- END MICROSOFT SECURITY.MD BLOCK -->
+The repository began from Microsoft's `azure-search-openai-demo`. Microsoft security-policy text that was specific to Microsoft's own repositories has been replaced with security guidance appropriate to this portfolio repository. The upstream license remains in `LICENSE`.
